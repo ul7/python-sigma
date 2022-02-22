@@ -93,7 +93,7 @@ def convert(
 
     if not console.is_interactive:
         print(result)
-    elif format == "yaml" or format == "yml":
+    elif format in ["yaml", "yml"]:
         console.print(Syntax(result, "yaml", word_wrap=True))
     elif format == "json":
         console.print(Syntax(result, "json", word_wrap=True))

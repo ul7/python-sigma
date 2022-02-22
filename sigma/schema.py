@@ -172,20 +172,14 @@ class RuleTag(str):
     def namespace(self) -> Optional[str]:
         """The namespace is everything prior to the first period in the tag"""
 
-        if "." not in self:
-            return None
-
-        return self.split(".", maxsplit=1)[0]
+        return None if "." not in self else self.split(".", maxsplit=1)[0]
 
     @property
     def name(self) -> str:
         """The name is everything after the first period in the tag. If there
         are no periods, then the name is an empty string."""
 
-        if "." not in self:
-            return str(self)
-
-        return self.split(".", maxsplit=1)[1]
+        return str(self) if "." not in self else self.split(".", maxsplit=1)[1]
 
     @classmethod
     def __get_validators__(cls) -> Generator[Callable, None, None]:
@@ -264,10 +258,7 @@ class RuleDetectionFields(Dict[str, Any]):
     def build_expression(self) -> Expression:
         """Build the logical AND expression for these keywords"""
 
-        args = []
-        for key, value in self.items():
-            args.append(build_key_value_expression(key, value))
-
+        args = [build_key_value_expression(key, value) for key, value in self.items()]
         return LogicalAnd(args=args) if len(args) > 1 else args[0]
 
 

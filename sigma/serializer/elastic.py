@@ -369,7 +369,7 @@ class ElasticSecurityRule(EventQueryLanguage):
             if pretty:
                 return "\n".join([json.dumps(s, indent=2) for s in serialized])
             return "\n".join([json.dumps(s) for s in serialized])
-        elif format == "yaml" or format == "yml":
+        elif format in ["yaml", "yml"]:
             return yaml.safe_dump_all(serialized)
         else:
             raise UnsupportedSerializerFormat(format)
@@ -439,8 +439,7 @@ class ElasticSecurityRule(EventQueryLanguage):
                         tags.append(technique.id.upper())
                         if technique.tactics:
                             for tactic_id in technique.tactics:
-                                tactic = attack.get_tactic(tactic_id)
-                                if tactic:
+                                if tactic := attack.get_tactic(tactic_id):
                                     tags.append(tactic.title)
                                     tactics[tactic.id] = tactic
 
@@ -453,8 +452,7 @@ class ElasticSecurityRule(EventQueryLanguage):
                                 tags.append(technique.id.upper())
                                 if technique.tactics:
                                     for tactic_id in technique.tactics:
-                                        tactic = attack.get_tactic(tactic_id)
-                                        if tactic:
+                                        if tactic := attack.get_tactic(tactic_id):
                                             tags.append(tactic.title)
                                             tactics[tactic.id] = tactic
                                 techniques[technique.id] = technique

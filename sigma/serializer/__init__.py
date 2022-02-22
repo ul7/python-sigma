@@ -100,14 +100,11 @@ class LogSourceMatch(BaseModel):
         :returns: True if the rule's logsource details match this definition
         """
 
-        if (
-            (self.product and self.product != rule.logsource.product)
-            or (self.service and self.service != rule.logsource.service)
-            or (self.category and self.category != rule.logsource.category)
-        ):
-            return False
-
-        return True
+        return (
+            (not self.product or self.product == rule.logsource.product)
+            and (not self.service or self.service == rule.logsource.service)
+            and (not self.category or self.category == rule.logsource.category)
+        )
 
     @classmethod
     def __get_validators__(cls):
@@ -399,8 +396,8 @@ class Serializer(ABC):
 
         serializers_path = importlib.resources.files("sigma") / "data" / "serializers"
 
-        if (serializers_path / (name + ".yml")).is_file():
-            return cls.from_yaml(serializers_path / (name + ".yml"))
+        if (serializers_path / f'{name}.yml').is_file():
+            return cls.from_yaml(serializers_path / f'{name}.yml')
         elif pathlib.Path(name).is_file():
             return cls.from_yaml(name)
         elif name in BUILTIN_SERIALIZERS:
@@ -740,8 +737,8 @@ def get_serializer_class(name: str) -> Type[Serializer]:
 
     serializers_path = importlib.resources.files("sigma") / "data" / "serializers"
 
-    if (serializers_path / (name + ".yml")).is_file():
-        with (serializers_path / (name + ".yml")).open() as filp:
+    if (serializers_path / f'{name}.yml').is_file():
+        with (serializers_path / f'{name}.yml').open() as filp:
             definition = CommonSerializerSchema.parse_obj(yaml.safe_load(filp))
 
         return get_serializer_class(definition.base)
@@ -756,8 +753,6 @@ def get_serializer_class(name: str) -> Type[Serializer]:
         try:
             module_name, clazz_name = name.split(":", maxsplit=1)
             module = importlib.import_module(module_name)
-            serializer_type: Type[Serializer] = getattr(module, clazz_name)
-
-            return serializer_type
+            return getattr(module, clazz_name)
         except (ValueError, ModuleNotFoundError) as exc:
             raise SerializerNotFound(name) from exc
