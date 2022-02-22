@@ -153,10 +153,11 @@ class Attack(BaseModel):
                         if ref.get("source_name") not in cls.SOURCE_TYPES:
                             continue
 
-                        sub_tactics = []
-                        for tactic in entry.get("kill_chain_phases", []):
-                            if tactic.get("kill_chain_name") in cls.SOURCE_TYPES:
-                                sub_tactics.append(tactic_map[tactic.get("phase_name")])
+                        sub_tactics = [
+                            tactic_map[tactic.get("phase_name")]
+                            for tactic in entry.get("kill_chain_phases", [])
+                            if tactic.get("kill_chain_name") in cls.SOURCE_TYPES
+                        ]
 
                         technique_map[ref.get("external_id")] = entry.get("name")
                         attack.techniques.append(

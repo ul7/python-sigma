@@ -99,18 +99,15 @@ class FuzzyAliasedGroup(click.Group):
             return rv
 
         match = [m for m in self.list_commands(ctx) if m.startswith(cmd_name)]
-        if len(match) > 1 or len(match) == 0:
+        if len(match) > 1 or not match:
             match = None
         else:
             match = match[0]
 
         if match is None and len(cmd_name) >= 2:
             match = thefuzz.process.extractOne(cmd_name, self.list_commands(ctx))
-            if match is not None and match[1] < 70:
-                match = None
-            elif match is not None:
-                match = match[0]
-
+            if match is not None:
+                match = None if match[1] < 70 else match[0]
         if match is None:
             ctx.fail(f"Ambiguous command: {cmd_name}")
             return
@@ -150,8 +147,6 @@ def cli(ctx: click.Context, mitre_data: Optional[TextIO]):
     if mitre_data is not None:
         Attack.load(mitre_data.name)
         mitre_data.close()
-
-    pass
 
 
 from sigma.cli import list, mitre, schema, validate, converter, transform

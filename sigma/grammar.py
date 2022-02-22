@@ -124,7 +124,7 @@ class LogicalExpression(CoreExpression):
         # for now.
         subtypes = {type(a) for a in expression.args}
         subtype = subtypes.pop()
-        if len(subtypes) == 0 and isinstance(self, subtype):
+        if not subtypes and isinstance(self, subtype):
             return type(self)(
                 args=list(itertools.chain(*[a.args for a in expression.args]))
             ).postprocess(rule, parent)
@@ -214,12 +214,12 @@ class LogicalOr(LogicalExpression):
     def to_detection(self, group: bool = True) -> Tuple[str, List[Union[List, Dict]]]:
         """Convert a not expression to a detection condition"""
 
-        if all([isinstance(e, Keyword) for e in self.args]):
+        if all(isinstance(e, Keyword) for e in self.args):
             return "{}", [[e.value for e in self.args]]
 
         if (
-            all([isinstance(e, FieldComparison) for e in self.args])
-            and len(set([type(e) for e in self.args])) == 1
+            all(isinstance(e, FieldComparison) for e in self.args)
+            and len({type(e) for e in self.args}) == 1
         ):
             return "{}", [
                 {self.args[0].to_field_with_modifiers(): [e.value for e in self.args]}
@@ -258,7 +258,7 @@ class LogicalAnd(LogicalExpression):
     def to_detection(self, group: bool = True) -> Tuple[str, List[Union[List, Dict]]]:
         """Convert a not expression to a detection condition"""
 
-        if all([isinstance(e, FieldComparison) for e in self.args]):
+        if all(isinstance(e, FieldComparison) for e in self.args):
             return "{}", [{e.to_field_with_modifiers(): e.value for e in self.args}]
 
         conditions = []
@@ -400,7 +400,7 @@ class FieldContains(FieldComparison):
     def to_detection(self) -> Tuple[str, List[Union[List, Dict]]]:
         """Convert a not expression to a detection condition"""
 
-        return "{}", [{self.field + "|contains": self.value}]
+        return "{}", [{f'{self.field}|contains': self.value}]
 
 
 class Base64FieldEquality(FieldComparison):
@@ -414,7 +414,7 @@ class Base64FieldEquality(FieldComparison):
     def to_detection(self) -> Tuple[str, List[Union[List, Dict]]]:
         """Convert a not expression to a detection condition"""
 
-        return "{}", [{self.field + "|contains": self.value}]
+        return "{}", [{f'{self.field}|contains': self.value}]
 
 
 class FieldEndsWith(FieldComparison):
@@ -431,7 +431,7 @@ class FieldEndsWith(FieldComparison):
     def to_detection(self) -> Tuple[str, List[Union[List, Dict]]]:
         """Convert a not expression to a detection condition"""
 
-        return "{}", [{self.field + "|endswith": self.value}]
+        return "{}", [{f'{self.field}|endswith': self.value}]
 
 
 class FieldStartsWith(FieldComparison):
@@ -448,7 +448,7 @@ class FieldStartsWith(FieldComparison):
     def to_detection(self) -> Tuple[str, List[Union[List, Dict]]]:
         """Convert a not expression to a detection condition"""
 
-        return "{}", [{self.field + "|startswith": self.value}]
+        return "{}", [{f'{self.field}|startswith': self.value}]
 
 
 class FieldRegex(FieldComparison):
@@ -465,7 +465,7 @@ class FieldRegex(FieldComparison):
     def to_detection(self) -> Tuple[str, List[Union[List, Dict]]]:
         """Convert a not expression to a detection condition"""
 
-        return "{}", [{self.field + "|re": self.value}]
+        return "{}", [{f'{self.field}|re': self.value}]
 
 
 class FieldLookup(FieldComparison):
@@ -519,11 +519,7 @@ def base64offset_modifier(field: str, value: Any) -> List[str]:
         )
 
     encoded: bytes
-    if isinstance(value, str):
-        encoded = value.encode("utf-8")
-    else:
-        encoded = value
-
+    encoded = value.encode("utf-8") if isinstance(value, str) else value
     return [
         base64.b64encode(i * b" " + encoded)[
             start[i] : end[(len(encoded) + 1) % 3]
@@ -663,11 +659,11 @@ def build_grammar_parser():
     """Build the pyparsing grammar parser for the condition field"""
 
     # Detection Search Identifier names
-    identifier = Word(alphanums + "_-")
+    identifier = Word(f'{alphanums}_-')
     identifier.set_parse_action(Identifier.from_parsed)
 
     # Identifier name patterns used in quantifier expressions
-    identifier_pattern = Word(alphanums + "_*")
+    identifier_pattern = Word(f'{alphanums}_*')
     # Quantifier types
     quantifier = Keyword("1") | Keyword("any") | Keyword("all")
 
@@ -677,8 +673,7 @@ def build_grammar_parser():
 
     # All operand types
     operand = selector | identifier
-    # Setup infix notation (e.g. "(identifier1 or identifier2) and identifier3")
-    condition = infixNotation(
+    return infixNotation(
         base_expr=operand,
         op_list=[
             ("not", 1, opAssoc.RIGHT, LogicalNot.from_parsed),
@@ -686,5 +681,3 @@ def build_grammar_parser():
             ("or", 2, opAssoc.LEFT, LogicalOr.from_parsed),
         ],
     )
-
-    return condition

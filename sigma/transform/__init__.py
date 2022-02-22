@@ -219,13 +219,9 @@ class FieldMatchReplace(Transformation):
         if match is None:
             return expression
 
-        # Replace this expression with a simple equality using
-        # the regular expression matching group.
-        new_expression = FieldEquality(
+        return FieldEquality(
             field=self.target, value=match.group(1)
         ).postprocess(rule, expression.parent)
-
-        return new_expression
 
 
 class AddTags(Transformation):
